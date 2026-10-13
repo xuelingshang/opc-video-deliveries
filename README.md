@@ -34,6 +34,6 @@ VIDEO-ID/
 | `.github/workflows/` | 仅手动触发的 TEST 批次发布 / 清理工作流 |
 | `tests/` | 本地模拟 GitHub 的测试（PowerShell 7 / Linux，不代表 Windows 实测） |
 | `tool/` | Claude C 的兼容版下载器，仅保留记录，不分发 |
-| `docs/` | 发布流程、公开 Gate、R2 兼容核对、测试报告 |
+| `docs/` | 发布流程、公开 Gate、R2 兼容核对、[测试报告](docs/TEST-REPORT-2026-10-13.md) |
 
 大文件只放在 Release 资产里，不进入 Git 历史。
