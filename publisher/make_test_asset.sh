@@ -6,7 +6,7 @@ set -euo pipefail
 ID="$1"; OUT="$2"
 case "$ID" in TEST-*) ;; *) echo "test ids must start with TEST-" >&2; exit 2;; esac
 D="$OUT/$ID"; mkdir -p "$D"
-FONT=$(fc-match -f '%{file}' ':lang=zh' 2>/dev/null || true)
+FONT=$(fc-list ':lang=zh' file 2>/dev/null | head -n1 | cut -d: -f1)  # fc-match falls back to non-CJK fonts
 [ -n "$FONT" ] || { echo "no CJK font found (install fonts-noto-cjk)" >&2; exit 2; }
 ffmpeg -v error -y -f lavfi -i "testsrc2=size=1920x1080:rate=30:duration=12" \
   -f lavfi -i "sine=frequency=440:sample_rate=48000:duration=12" \

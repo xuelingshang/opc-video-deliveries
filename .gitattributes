@@ -4,3 +4,6 @@
 *.zip binary
 *.mp4 binary
 *.jpg binary
+# original R2 tool and its R2.1 copy are kept byte for byte
+r2-original/** -text
+r2.1-patch/** -text

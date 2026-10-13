@@ -13,26 +13,27 @@ VIDEO-ID/
 
 ## 朋友怎么下载
 
-继续使用 Founder 给的 **R2 下载工具**，双击即可，它会把所有已到期的批次整理到
+使用 Founder 给的 **R2 下载工具**，双击 `01-双击下载最新视频.cmd`，所有已到期的批次整理到
 `D:\OPC-DELIVERIES\YYYY-MM-DD\VIDEO-ID\`，已校验过的视频不会重复下载。
 
-本仓库 `tool/` 里另有一个按同一格式读取 Release 的兼容版下载器（`OPC-Download.cmd`），
-与旧工具的逐字段核对和尚待实测的项目见 [docs/R2-COMPATIBILITY.md](docs/R2-COMPATIBILITY.md)。
-在 Founder 用真实测试 Release 实测之前，请以旧 R2 工具为准。
+> 注意：原版 R2 在仓库有 2 个及以上 Release 时会跳过全部批次（详见 [docs/R2-COMPATIBILITY.md](docs/R2-COMPATIBILITY.md)）。
+> 正式交付开始前，请把朋友文件夹中的 `DOWNLOAD.ps1` 换成 [`r2.1-patch/DOWNLOAD.ps1`](r2.1-patch/README.md)（只改一行），并先在 Windows 上验收。
 
 ## 当前状态
 
-- 尚无已发布的交付批次。
+- 尚无正式交付批次。`delivery-2099-12-31-NN` 是 `[TEST]` 测试批次（沙盒日期，朋友默认双击不会下载），测试后清理。
 - 历史成片要在素材公开许可和 Founder 审片批准都确认后才会发布，规则见 [docs/PUBLISHING.md](docs/PUBLISHING.md)。
 
 ## 仓库内容
 
 | 目录 | 内容 |
 |---|---|
-| `tool/` | 兼容版 Windows 下载器（PowerShell 5.1/7，双击 `.cmd`） |
-| `publisher/` | 打包（可重复生成同一 SHA256）与 Release 发布器；原创测试样片生成脚本 |
-| `docs/workflow-templates/` | Founder 手动启用的测试批次发布工作流模板 |
-| `tests/` | 本地模拟 GitHub 的场景测试（不代表真实 Release 或 Windows 实测） |
-| `docs/` | 发布流程、公开 Gate、R2 兼容核对 |
+| `r2-original/` | 原版 R2 朋友端工具，逐字节保存，附来源与 SHA256 |
+| `r2.1-patch/` | 原版 `DOWNLOAD.ps1` 的一行修正版（待 Founder 决定分发） |
+| `publisher/` | 打包、发布（与原版 R2 清单格式一致）、TEST 清理脚本；原创测试样片生成脚本 |
+| `.github/workflows/` | 仅手动触发的 TEST 批次发布 / 清理工作流 |
+| `tests/` | 本地模拟 GitHub 的测试（PowerShell 7 / Linux，不代表 Windows 实测） |
+| `tool/` | Claude C 的兼容版下载器，仅保留记录，不分发 |
+| `docs/` | 发布流程、公开 Gate、R2 兼容核对、测试报告 |
 
 大文件只放在 Release 资产里，不进入 Git 历史。

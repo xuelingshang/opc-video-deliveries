@@ -2,7 +2,7 @@
 """Minimal stand-in for `gh api` covering the Releases calls made by publisher/opc_publish.py.
 State lives in $FAKE_GH_DIR; published releases are mirrored into $FAKE_GH_SIM (github_sim.py
 directory) so the anonymous download check and the friend tool can read them.
-Fault injection: $FAKE_GH_FAIL_UPLOAD=<asset name>:<count>, $FAKE_GH_NO_DIGEST=1."""
+Release/tag DELETE removes them from both. Fault injection: $FAKE_GH_FAIL_UPLOAD=<asset name>:<count>, $FAKE_GH_NO_DIGEST=1."""
 import hashlib, json, os, re, shutil, sys, urllib.parse
 
 D = os.environ["FAKE_GH_DIR"]; SIM = os.environ.get("FAKE_GH_SIM")
@@ -93,6 +93,19 @@ if m:
             for a in r["assets"]:
                 shutil.copyfile(a["_file"], os.path.join(SIM, "assets", r["tag_name"], a["name"]))
             rp = os.path.join(SIM, "releases.json"); sr = json.load(open(rp)) if os.path.exists(rp) else []
-            sr.insert(0, dict(tag_name=r["tag_name"], draft=False, prerelease=r["prerelease"])); json.dump(sr, open(rp, "w"))
+            web = [dict(name=a["name"], size=a["size"], state="uploaded", browser_download_url=
+                        f"https://github.com/xuelingshang/opc-video-deliveries/releases/download/{r['tag_name']}/{a['name']}")
+                   for a in r["assets"]]   # the R2 tool reads these fields from the release list
+            sr.insert(0, dict(tag_name=r["tag_name"], draft=False, prerelease=r["prerelease"], assets=web)); json.dump(sr, open(rp, "w"))
+    if method == "DELETE":
+        rels.remove(r)
+        if SIM:
+            rp = os.path.join(SIM, "releases.json")
+            json.dump([x for x in json.load(open(rp)) if x["tag_name"] != r["tag_name"]], open(rp, "w"))
+            shutil.rmtree(os.path.join(SIM, "assets", r["tag_name"]), ignore_errors=True)
+        out({})
     out(view(r))
+m = re.fullmatch(r"repos/[^/]+/[^/]+/git/refs/tags/(.+)", path)
+if m and method == "DELETE":
+    out({})
 fail(f"fake gh: unsupported {method} {pos[0]}", 2)

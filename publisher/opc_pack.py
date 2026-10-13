@@ -23,7 +23,8 @@ import argparse, hashlib, json, os, re, subprocess, sys, zipfile
 
 SCHEMA_VERSION = 1
 FIXED_TIME = (2026, 10, 13, 0, 0, 0)  # delivery system start date; keeps ZIP bytes reproducible
-ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+# same pattern as the original R2 DOWNLOAD.ps1 ($id -notmatch ...), so every id we pack is accepted there
+ID_RE = re.compile(r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$")
 
 
 def sha256_file(path):
@@ -89,20 +90,21 @@ def build(vid, src, outdir, require_hd=True):
                 for block in iter(lambda: fin.read(1 << 20), b""):
                     h.update(block)
                     fout.write(block)
-            files.append(dict(name=name, path=f"{vid}/{name}", size_bytes=size, sha256=h.hexdigest()))
+            # original R2 files[] fields only: name, size_bytes, sha256
+            files.append(dict(name=name, size_bytes=size, sha256=h.hexdigest()))
     os.replace(tmp, zip_path)
     # re-open and confirm every entry reads back byte-exact
     with zipfile.ZipFile(zip_path) as z:
         names = [i.filename for i in z.infolist()]
-        if names != [f["path"] for f in files]:
+        if names != [f"{vid}/{f['name']}" for f in files]:
             raise SystemExit(f"{vid}: zip entry list mismatch {names}")
         for f in files:
             h = hashlib.sha256()
-            with z.open(f["path"]) as fin:
+            with z.open(f"{vid}/{f['name']}") as fin:
                 for block in iter(lambda: fin.read(1 << 20), b""):
                     h.update(block)
             if h.hexdigest() != f["sha256"]:
-                raise SystemExit(f'{vid}: read-back hash mismatch for {f["path"]}')
+                raise SystemExit(f'{vid}: read-back hash mismatch for {f["name"]}')
     entry = dict(video_id=vid, asset_name=asset_name, size_bytes=os.path.getsize(zip_path),
                  sha256=sha256_file(zip_path), files=files)
     with open(os.path.join(pkg_dir, "video-entry.json"), "w", encoding="utf-8") as f:

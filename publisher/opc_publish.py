@@ -13,7 +13,9 @@ Safety rules:
   * A published tag is never modified or overwritten. Re-running with the same packages
     resumes an unfinished draft of ours instead of starting over.
   * Formal batches need --confirm-public-gate (rights + Founder viewing approved);
-    test batches may only contain TEST-* video ids.
+    test batches may only contain TEST-* video ids and must use the sandbox delivery date
+    2099-12-31, which the original R2 tool treats as a future batch and skips on the
+    friend's default one-click run (Founder tests it with "02-下载指定日期.cmd").
 
 Uses the `gh` CLI (GH_TOKEN / GITHUB_TOKEN must allow contents:write on the repo).
 
@@ -24,6 +26,7 @@ import argparse, datetime, hashlib, json, os, re, subprocess, sys, tempfile, tim
 
 TAG_RE = re.compile(r"^delivery-(\d{4}-\d{2}-\d{2})-(\d{2})$")
 MANIFEST_NAME = "delivery-manifest.json"
+TEST_DATE = "2099-12-31"
 
 
 def log(*a):
@@ -75,9 +78,11 @@ def load_packages(pkg_dirs, test):
         zp = os.path.join(d, e["asset_name"])
         if os.path.getsize(zp) != e["size_bytes"] or sha256_file(zp) != e["sha256"]:
             raise SystemExit(f"{vid}: ZIP on disk does not match video-entry.json")
-        want = [f"{vid}/{vid}.mp4", f"{vid}/cover.jpg", f"{vid}/weibo.txt", f"{vid}/subtitle.srt"]
-        if [f["path"] for f in e["files"]] != want:
-            raise SystemExit(f"{vid}: files must be exactly {want}")
+        if e["size_bytes"] >= 2 * 1024 ** 3:
+            raise SystemExit(f"{vid}: ZIP exceeds the 2 GiB GitHub release asset limit")
+        want = [f"{vid}.mp4", "cover.jpg", "weibo.txt", "subtitle.srt"]
+        if [f["name"] for f in e["files"]] != want or any(sorted(f) != ["name", "sha256", "size_bytes"] for f in e["files"]):
+            raise SystemExit(f"{vid}: files must be exactly {want} with name/size_bytes/sha256")
         if test != vid.startswith("TEST-"):
             raise SystemExit(f"{vid}: test batches hold only TEST-* ids, formal batches none")
         videos.append((e, zp))
@@ -120,12 +125,9 @@ def pick_tag(releases, date, nn, asset_names):
 
 
 def build_manifest(repo, date, tag, videos, test):
-    m = dict(schema_version=1, repository=repo, delivery_date=date, release_tag=tag,
-             videos=[e for e, _ in videos])
-    m["generated_at_utc"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    if test:
-        m["test_only"] = True
-    return m
+    # exactly the keys written by the original R2 prepare_release.py; nothing extra
+    return dict(schema_version=1, delivery_date=date, release_tag=tag, repository=repo,
+                videos=[e for e, _ in videos])
 
 
 def asset_ok(repo, a, size, sha):
@@ -219,7 +221,10 @@ def main():
     ap.add_argument("--web-base", default="https://github.com", help=argparse.SUPPRESS)  # tests only
     a = ap.parse_args()
 
-    datetime.date.fromisoformat(a.date)
+    if datetime.date.fromisoformat(a.date).isoformat() != a.date:
+        raise SystemExit("date must be YYYY-MM-DD")
+    if a.test != (a.date == TEST_DATE):
+        raise SystemExit(f"test batches use delivery date {TEST_DATE} only, formal batches never")
     if not a.test and not a.confirm_public_gate:
         raise SystemExit("formal batch refused: pass --confirm-public-gate only after rights and Founder viewing are approved")
     videos = load_packages(a.pkg, a.test)
@@ -230,7 +235,7 @@ def main():
     names = {e["asset_name"] for e, _ in videos}
     tag, rel = pick_tag(releases, a.date, a.nn, names)
     manifest = build_manifest(a.repo, a.date, tag, videos, a.test)
-    mbytes = (json.dumps(manifest, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
+    mbytes = (json.dumps(manifest, ensure_ascii=False, indent=2) + "\n").encode("utf-8")
     if a.manifest_out:
         open(a.manifest_out, "wb").write(mbytes)
     log(f"batch {tag}: {len(videos)} video(s){' [TEST]' if a.test else ''}; {'resuming draft ' + str(rel['id']) if rel else 'new draft'}")

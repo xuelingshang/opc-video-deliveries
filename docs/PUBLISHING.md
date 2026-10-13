@@ -33,21 +33,29 @@ python3 publisher/opc_publish.py --repo xuelingshang/opc-video-deliveries --date
 5. 全部通过才把草稿改为已发布；中途失败只留下草稿（朋友看不到），重跑会接着同一草稿继续。
 6. 发布后用不带任何凭据的公开地址下载清单与 ZIP 复核。
 
-正式批次必须带 `--confirm-public-gate`；测试批次（`--test`）只允许 `TEST-` 编号。
+正式批次必须带 `--confirm-public-gate`；测试批次（`--test`）只允许 `TEST-` 编号，且只能用沙盒交付日期 `2099-12-31`，正式批次不得使用该日期。
+清单与原版 R2 `prepare_release.py` 的键名、顺序、`files[]` 字段完全一致（见 [R2-COMPATIBILITY.md](R2-COMPATIBILITY.md)）。
 
-## 当前环境的权限缺口（2026-10-13）
+## TEST 测试批次（GitHub Actions，仅手动触发）
 
-本次云端会话可以读取仓库，但创建 Release 被会话类型拦截：
+工作流 `.github/workflows/publish-test-release.yml`（Actions → “TEST delivery release” → Run workflow）：
 
-```
-POST /repos/xuelingshang/opc-video-deliveries/releases
-→ HTTP 403 "Creating, editing, or deleting releases is not permitted for this session type."
-```
+- `action=publish`：在云端生成原创测试样片（程序图案 + 正弦音，画面、封面、文案、字幕均标明“测试 / 非正式视频”），
+  打包并发布为 `delivery-2099-12-31-NN`，标题以 `[TEST]` 开头，不设为 latest，最后用匿名地址完整下载核验。
+- `action=cleanup`：只删除沙盒日期、标题 `[TEST]`、资产与清单全为 `TEST-` 的 Release 及其标签；任一目标不符合则一个都不删；
+  删除后再次确认没有任何沙盒日期 Release 或 `TEST-` 资产留存。
+- 只用仓库自带的 `GITHUB_TOKEN`，工作流内声明最小权限 `contents: write`；不读取私有仓库，不处理任何正式视频。
+- 每轮测试换一个新的 TEST 编号（原版工具按编号记“已完成”，同编号新内容会被拒绝）。
 
-同一会话推送本仓库分支也被拒绝（`git push` 与 GitHub 连接器均返回 403，提示 Claude GitHub App 对本仓库没有写权限）。
-因此本会话没有创建任何 Release、标签、分支或资产，也没有用个人凭据绕过。可选的发布途径：
+朋友默认双击永远不会下载 2099-12-31 的批次（视为未来批次）；Founder 用 `02-下载指定日期.cmd` 输入 `2099-12-31` 专门测试。
 
-- **测试批次**：把本分支合并到 `main`，再把 `docs/workflow-templates/publish-test-release.yml` 复制到 `.github/workflows/`（模板默认不启用，由 Founder 决定），然后在 GitHub 网页 Actions → “Publish TEST delivery release” → Run workflow。
-  该工作流在云端生成原创测试样片（程序图案 + 正弦音），用仓库自带的 `GITHUB_TOKEN` 走上述 1–6 步，不需要任何人的账号密码，也不经过 Founder 的电脑或宽带。
-- **正式批次**（仅在 Gate 通过后）：需要一个能写 Release 的执行环境，并能读取私有成片仓库。
-  公开仓库的 Actions 日志是公开的，正式发布不应在这里运行，以免暴露内部资料；应在私有仓库或允许写 Release 的会话中运行同一个发布器。
+## 正式批次
+
+只在 Gate 通过后，由能读取私有成片仓库的执行环境运行 `opc_pack.py` + `opc_publish.py --confirm-public-gate`。
+公开仓库的 Actions 日志是公开的，正式发布不在本仓库的 Actions 中运行，以免暴露内部资料。
+
+## GitHub 权限状态（2026-10-13，Claude B 会话）
+
+- 本会话可读取并推送本仓库分支（Claude C 会话当时推送返回 403；本会话的 GitHub App 授权已可写）。
+- C 的提交 `edf4a76` 已原样恢复到 `claude/great-allen-zms314`。
+- Release 创建与删除通过上述 Actions 工作流完成，不使用任何个人令牌。

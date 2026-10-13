@@ -1,0 +1,63 @@
+# Founder-triggered only (Actions → "TEST delivery release" → Run workflow).
+# publish: builds ONE original test sample (synthetic pattern + sine tone, no third-party
+#          material) and publishes it as R2 batch delivery-2099-12-31-NN. The sandbox date
+#          keeps it out of every friend's default one-click run of the original R2 tool.
+# cleanup: deletes sandbox-date TEST releases and their tags, then checks none remain.
+# Formal videos are never handled by this workflow; it only uses this repository's GITHUB_TOKEN.
+name: TEST delivery release
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "publish = create the TEST release; cleanup = delete TEST releases"
+        type: choice
+        options: [publish, cleanup]
+        default: publish
+      video_id:
+        description: "Test video id (TEST-XXXX; use a new id for every test round)"
+        required: true
+        default: "TEST-0001"
+permissions:
+  contents: write
+concurrency:
+  group: publish-delivery
+  cancel-in-progress: false
+jobs:
+  test-release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VIDEO_ID: ${{ inputs.video_id }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check inputs
+        run: |
+          [[ "$VIDEO_ID" =~ ^TEST(-[A-Z0-9]+)+$ ]] || { echo "video_id must look like TEST-0001"; exit 1; }
+      - name: Install ffmpeg and a CJK font
+        if: inputs.action == 'publish'
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg fonts-noto-cjk
+      - name: Generate original test asset
+        if: inputs.action == 'publish'
+        run: bash publisher/make_test_asset.sh "$VIDEO_ID" work/src
+      - name: Pack VIDEO-ID-DELIVERY.zip
+        if: inputs.action == 'publish'
+        run: |
+          python3 publisher/opc_pack.py --id "$VIDEO_ID" --mp4 "work/src/$VIDEO_ID/$VIDEO_ID.mp4" \
+            --cover "work/src/$VIDEO_ID/cover.jpg" --weibo "work/src/$VIDEO_ID/weibo.txt" \
+            --srt "work/src/$VIDEO_ID/subtitle.srt" --out work/pkg
+      - name: Draft → upload → verify → publish → anonymous download check
+        if: inputs.action == 'publish'
+        run: |
+          python3 publisher/opc_publish.py --repo "$GITHUB_REPOSITORY" --date 2099-12-31 \
+            --pkg "work/pkg/$VIDEO_ID" --test --full-anon-verify --target "$GITHUB_SHA" \
+            --manifest-out work/delivery-manifest.json
+      - name: Keep the manifest with the run
+        if: inputs.action == 'publish'
+        uses: actions/upload-artifact@v4
+        with:
+          name: delivery-manifest
+          path: work/delivery-manifest.json
+      - name: Delete TEST releases and confirm none remain
+        if: inputs.action == 'cleanup'
+        run: python3 publisher/opc_cleanup_test.py --repo "$GITHUB_REPOSITORY"

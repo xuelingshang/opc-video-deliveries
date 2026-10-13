@@ -1,41 +1,54 @@
-# R2 协议逐字段核对
+# 原版 R2 兼容性核对（2026-10-13，Claude B 接力）
 
-现有朋友端 R2 下载工具是 Founder 从外部获得的独立 ZIP，不在任何 OPC 仓库里，本仓库无法读取它的源码。
-下表把 Founder 2026-10-13 给出的 R2 规格与本仓库发布器（`publisher/opc_publish.py`、`publisher/opc_pack.py`）
-实际生成的内容逐项对照。**“已对齐”只表示与文字规格一致；在用旧 R2 工具对真实 Release 实测之前，不能声称旧工具已经可用。**
+依据：原版 R2 源码（`r2-original/01-给朋友/DOWNLOAD.ps1`，及只登记哈希的 `prepare_release.py`、`publish_release.py`），
+逐字段、逐行为对照本仓库发布器 `publisher/opc_pack.py`、`publisher/opc_publish.py`。
 
-| # | R2 规格 | 本仓库生成的内容 | 状态 |
+## 一、协议字段（发布器已改为与原版完全一致）
+
+| # | 原版 R2 | 本仓库发布器 | 结果 |
 |---|---|---|---|
-| 1 | 仓库 `xuelingshang/opc-video-deliveries` | 同一仓库的 Release | 已对齐 |
-| 2 | Release 标签 `delivery-YYYY-MM-DD-NN` | `delivery-<计划交付日期>-<两位批次号>`；同一天第二批取下一个空号（01、02…）；已发布的标签永不改写 | 已对齐（假设 NN 从 01 起、两位数） |
-| 3 | 每批包含 `delivery-manifest.json` | 每个 Release 一个同名资产，在所有 ZIP 上传并校验后**最后**上传；草稿全部校验通过才发布 | 已对齐 |
-| 4 | `schema_version=1` | JSON 整数 `1` | 已对齐（假设旧工具接受整数而非字符串 `"1"`） |
-| 5 | 清单含 `repository`、`delivery_date`、`release_tag`、`videos` | 同名字段，值分别为仓库全名、`YYYY-MM-DD`、Release 标签、数组 | 已对齐 |
-| 5a | （规格未提） | 额外字段 `generated_at_utc`；测试批次另有 `test_only: true` | 待实测：需旧工具忽略未知字段 |
-| 6 | `videos[]` 含 `video_id`、`asset_name`、`size_bytes`、`sha256`、`files` | 同名字段；`asset_name`=`VIDEO-ID-DELIVERY.zip`；`size_bytes`、`sha256` 为该 ZIP 的字节数与小写十六进制 SHA256 | 已对齐（假设 size/sha 指 ZIP 本身） |
-| 7 | `files`（规格未给内部结构） | 4 个对象，顺序固定：`{"name","path","size_bytes","sha256"}`，`path` 为 ZIP 内路径 `VIDEO-ID/…` | **未知，必须用旧工具实测**；若旧工具要求字符串数组或其他键名，只需改发布器一处，ZIP 不变 |
-| 8 | 每条视频独立 `VIDEO-ID-DELIVERY.zip` | 同 | 已对齐 |
-| 9 | ZIP 内 `VIDEO-ID/VIDEO-ID.mp4`、`cover.jpg`、`weibo.txt`、`subtitle.srt` | 正好这 4 个条目（无目录条目），存储不压缩，固定时间戳，可重复生成同一 SHA256 | 已对齐 |
-| 10 | 自动补齐所有已到期但未验证完成的批次 | 由旧工具实现；发布器保证已发布批次不变、补发批次用新批次号 | 取决于旧工具 |
-| 11 | （规格未提）旧工具如何发现批次：API 列表、逐号探测或其他 | 发布为普通 Release（非草稿、非预发布）；API 列表与 `releases/download/<tag>/delivery-manifest.json` 两种方式都能找到 | 待实测 |
+| 1 | 仓库 `xuelingshang/opc-video-deliveries`（工具写死，下载 URL 必须以 `https://github.com/xuelingshang/opc-video-deliveries/releases/download/` 开头） | 同一仓库的普通 Release | 一致 |
+| 2 | 标签 `delivery-YYYY-MM-DD-NN`（工具接受 2～3 位 NN，也接受旧 `daily-YYYY-MM-DD`） | `delivery-日期-NN`，NN 两位，从 01 递增 | 一致 |
+| 3 | 每个 Release 恰好一个 `delivery-manifest.json` | 同；所有 ZIP 上传校验后最后上传 | 一致 |
+| 4 | 清单键：`schema_version`(整数 1)、`delivery_date`、`release_tag`、`repository`、`videos` | 与原版 `prepare_release.py` **键名与顺序完全相同**，已删除 C 版多出的 `generated_at_utc`、`test_only` | 一致（实测对比） |
+| 5 | `videos[]`：`video_id`、`asset_name`、`size_bytes`、`sha256`（ZIP 本身） | 同 | 一致 |
+| 6 | `files[]`：`name`、`size_bytes`、`sha256`，恰好 4 项、文件名不重复 | 同，已删除 C 版多出的 `path` | 一致；同一素材下与原版 `prepare_release.py` 输出的 `files[]` 逐字节相同 |
+| 7 | 视频编号 `^[A-Z0-9]+(?:-[A-Z0-9]+)*$` | 打包器改用同一正则（C 版原先允许小写和点） | 一致 |
+| 8 | `VIDEO-ID-DELIVERY.zip`，条目必须以 `VIDEO-ID/` 开头，解压后 SHA256 逐个核对 | 4 个条目 `VIDEO-ID/VIDEO-ID.mp4、cover.jpg、weibo.txt、subtitle.srt`，不压缩 | 一致 |
+| 9 | 草稿、预发布 Release 一律跳过 | 测试与正式批次都发布为普通 Release（非预发布），否则原版工具读不到 | 一致 |
+| 10 | 每个资产 < 2 GiB（原版 `prepare_release.py` 检查） | 发布器同样拒绝 ≥ 2 GiB 的 ZIP | 一致 |
 
-## 本仓库的下载器（`tool/`）
+## 二、行为实测（本地模拟 GitHub，PowerShell 7.4.6 / Linux，工具字节未改）
 
-`tool/opc-download.ps1` 是按上表读取同一批 Release 的**兼容版**，不是旧 R2 工具本身：
+`tests/run_r2_tool_tests.py` 只替换环境（API 地址、curl.exe、explorer.exe、“今天”的日期），不改工具。
 
-- 发现批次：先用 GitHub 匿名 API 列出 Release；API 不可用时按日期逐批探测 `releases/download/delivery-日期-NN/delivery-manifest.json`。
-- 校验 `schema_version==1`、`repository`、`release_tag`、`delivery_date` 与标签一致；`asset_name` 必须是 `VIDEO-ID-DELIVERY.zip`；ZIP 内只允许那 4 个文件。
-- `files` 同时接受对象（`path`/`name` + `size_bytes` + `sha256`）和纯文件名两种写法。
-- 编号以 `TEST-` 开头的测试样片默认不下载；`OPC-Download-TEST.cmd`（`-IncludeTest`）会把它们单独放到 `_TEST\日期\编号`。
+| 场景 | 原版 R2 | R2.1（改一行） |
+|---|---|---|
+| 首批下载，四件套同一文件夹 `…\2026-10-13\SIM-0001\`，SHA256 通过 | 通过 | 通过 |
+| 重复双击自动跳过，不重下 ZIP | 通过 | 通过 |
+| 同日第二批只补新视频 | **失败** | 通过 |
+| 提前交付：今天不下载，交付日当天下载 | 今天不下载通过；当天下载**失败** | 通过 |
+| 迟交补齐到原定日期文件夹 | **失败** | 通过 |
+| 断点续传（中断后保留 `.partial`，HTTP Range 续传并校验） | **失败**（没走到下载） | 通过 |
+| TEST 沙盒日期 2099-12-31：默认双击不下载；指定日期可下载、可重复跳过 | 默认不下载通过；指定日期**失败** | 通过 |
+| 本地文件被改动：SHA256 不符，拒绝自动覆盖（退出码 2）；恢复后通过 | **失败** | 通过 |
+| 发布器去重：已发布的视频编号不再上传 | 通过（发布器） | 通过 |
 
-旧 R2 工具与兼容版可以并存，读的是同一批 Release。**在旧工具对真实测试 Release 实测通过前，请不要让朋友更换工具，也不要据此认定旧工具可用。**
-如果实测发现旧工具与第 7 项（或其他项）不兼容，二选一：调整发布器的 `files` 写法以适配旧工具（推荐，ZIP 不变），
-或由 Founder 让朋友一次性换成本仓库的兼容版下载器。
+原版的全部失败都出现在仓库已有 ≥2 个 Release 之后，原因见 [`r2.1-patch/README.md`](../r2.1-patch/README.md)：
+`Invoke-RestMethod` 把 Release 数组当作一个对象输出，原版把整份列表当成“一个 Release”，于是 `draft` 判断为真，所有批次被跳过，并提示“没有本次到期需要检查的批次”。
 
-## 测试批次与正式批次的区分
+**结论：原版 R2 在仓库只有 1 个 Release 时可用；一旦有第 2 个 Release（同日第二批、第二天的批次），原版将静默失效。正式交付开始前需要朋友换用 R2.1 的 `DOWNLOAD.ps1`（Founder 决定）。**
 
-测试 Release 的标签也必须是 `delivery-YYYY-MM-DD-NN`，否则测不到旧工具。为避免混入正式交付：
+## 三、Windows PowerShell 5.1 尚待验收（本环境无法运行 Windows）
 
-- 测试样片编号固定以 `TEST-` 开头，画面、封面、文案、字幕都写明“测试 / 非正式视频”；Release 标题以 `[TEST]` 开头。
-- 测试批次只含 TEST 编号，正式批次不允许出现 TEST 编号（发布器强制检查）。
-- 旧 R2 工具若不区分测试批次，会把 `TEST-0001` 下载到 `D:\OPC-DELIVERIES\<日期>\TEST-0001`。建议 Founder 先在自己电脑上实测，确认后再通知朋友。
+1. 上述多 Release 缺陷在 Windows PowerShell 5.1 上是否同样出现（按 5.1 已知的 `Invoke-RestMethod` 行为，预计出现）；R2.1 修正在 5.1 上是否生效。
+2. 两个 `.cmd` 以 UTF-8 BOM 开头：cmd.exe 第一行可能显示“'﻿@echo' 不是内部或外部命令”并保持回显；预计不影响下载，需确认显示。
+3. `DOWNLOAD.ps1` 带 UTF-8 BOM，5.1 应按 UTF-8 读取中文；需确认控制台中文显示正常。
+4. Windows 自带 `curl.exe`（Windows 10 1803 起）可用；`Expand-Archive` 解压不压缩的 ZIP；有 D 盘时输出到 `D:\OPC-DELIVERIES`。
+5. `Sort-Object day,tag` 对哈希表的排序在 5.1 上可能不生效；只影响处理顺序，不影响结果。
+
+## 四、原版的其他已知行为（不改，记录在案）
+
+- 同一视频编号若出现在不同日期的批次里，工具会在另一个日期文件夹再下载一份（只拒绝同编号不同内容）；由发布器拒绝重复发布同一编号来保证去重。
+- 已完成记录按视频编号保存在 `_已完成记录\编号.json`；同编号的新内容会被拒绝（“禁止自动覆盖”），因此修正版必须用新编号。每轮测试也应使用新的 TEST 编号。
+- 测试批次无法被原版识别为测试，因此测试 Release 一律放在沙盒日期 `2099-12-31`，朋友默认双击永远不会下载它，测试完立即清理。
