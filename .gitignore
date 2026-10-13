@@ -1,0 +1,6 @@
+# media and build output never enter git history; they go to Release assets
+*.zip
+*.mp4
+*.partial
+work/
+__pycache__/
