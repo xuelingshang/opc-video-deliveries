@@ -1,0 +1,6 @@
+# stored byte-exact (CRLF, UTF-8 BOM for .ps1) so raw downloads run on Windows PowerShell 5.1
+*.cmd -text
+*.ps1 -text
+*.zip binary
+*.mp4 binary
+*.jpg binary
