@@ -119,6 +119,10 @@ def pick_tag(releases, date, nn, asset_names):
         if r["draft"] and {a["name"] for a in r.get("assets", [])} <= asset_names | {MANIFEST_NAME}:
             return r["tag_name"], r            # resume our own unfinished draft
     n = max(same_day, default=0) + 1
+    if n > 1 and date != TEST_DATE:
+        # daily rule (2026-10-14): one release per delivery date; later stations append to -01
+        raise SystemExit(f"delivery-{date}-01 already exists: append with publisher/opc_daily.py, "
+                         f"never create delivery-{date}-{n:02d}")
     if n > 99:
         raise SystemExit("no free batch number left for this date")
     return f"delivery-{date}-{n:02d}", None

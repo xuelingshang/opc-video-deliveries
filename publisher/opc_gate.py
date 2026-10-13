@@ -54,8 +54,8 @@ def main():
     if a.publish and public:
         if not (a.repo and a.date):
             raise SystemExit("--publish needs --repo and --date")
-        cmd = [sys.executable, os.path.join(HERE, "opc_publish.py"), "--repo", a.repo, "--date", a.date,
-               "--confirm-public-gate", "--full-anon-verify"]   # gate decided above from the records
+        cmd = [sys.executable, os.path.join(HERE, "opc_daily.py"), "--repo", a.repo, "--date", a.date,
+               "--confirm-public-gate", "--full-anon-verify"]   # gate decided above; appends to delivery-DATE-01
         for d in public:
             cmd += ["--pkg", d]
         if a.web_base:
