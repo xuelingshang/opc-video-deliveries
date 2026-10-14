@@ -1,0 +1,74 @@
+# AUTO-BATCH-008 delivery entry, OWNER-CONTROLLED. Lives in xuelingshang/opc-video-deliveries and runs only from
+# its default branch (schedule, or Actions -> "AUTO-BATCH-008 delivery draft" -> Run workflow).
+#
+# Trust model
+#   * Production stations (B, 1, 2) only commit DATA to the private 008 repository: a request
+#     DELIVERY-008/requests/<YYYY-MM-DD>-<station>.json plus the byte parts and sidecars it lists. They have no
+#     token that can write here, and nothing from the 008 repository is executed by this workflow.
+#   * The code that runs is this file and delivery-008/ on this repository's protected default branch.
+#   * Writes use this repository's own short-lived GITHUB_TOKEN (contents: write): the 008 draft
+#     delivery-008-YYYY-MM-DD-01 "AUTO-BATCH-008｜YYYY-MM-DD交付" and the lock branch delivery-008-lock.
+#   * Reading the private 008 repository uses the environment secret OPC008_READ_TOKEN (fine-grained token:
+#     only that repository, Contents read-only). It is only given to step 2, through git's GIT_CONFIG_* variables.
+#   * Draft only: there is no publish step. Never touches 007's delivery-YYYY-MM-DD-01 or any 007 workflow.
+#   * This repository is public, so this log is public: it shows request names, video ids, sizes and SHA256s
+#     only. No artifacts are uploaded.
+name: AUTO-BATCH-008 delivery draft
+on:
+  schedule:
+    - cron: '23 * * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: only report what would be delivered (no lock, no release writes)
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: delivery-008-draft
+  cancel-in-progress: false
+jobs:
+  deliver:
+    if: github.repository == 'xuelingshang/opc-video-deliveries' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: delivery-008
+    timeout-minutes: 240
+    steps:
+      - name: Checkout this repository's delivery code (no credentials kept on disk)
+        uses: actions/checkout@v4
+        with:
+          path: dlv
+          persist-credentials: false
+      - name: Install ffprobe (used by the packer)
+        run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+      - name: 1 · 008 draft state (GITHUB_TOKEN of this repository, read only here)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 dlv/delivery-008/run_008.py state --repo "$GITHUB_REPOSITORY" --work work
+      - name: 2 · Requests and data from the 008 repository (read-only token; data only, nothing from it runs)
+        env:
+          READ_TOKEN: ${{ secrets.OPC008_READ_TOKEN }}
+        run: |
+          if [ -z "$READ_TOKEN" ]; then
+            echo "::error::environment secret OPC008_READ_TOKEN (environment delivery-008) is not set"; exit 1
+          fi
+          AUTH=$(printf 'x-access-token:%s' "$READ_TOKEN" | base64 -w0)
+          echo "::add-mask::$AUTH"
+          unset READ_TOKEN
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+                 GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $AUTH"
+          python3 dlv/delivery-008/run_008.py fetch --config dlv/delivery-008/STATIONS.json --work work
+      - name: 3 · Rebuild ZIPs from the byte parts and verify every SHA256 (no credentials)
+        run: python3 dlv/delivery-008/run_008.py rebuild --work work
+      - name: 4 · Lock, append to the 008 draft, verify, unlock (GITHUB_TOKEN of this repository)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
+        run: |
+          AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
+          echo "::add-mask::$AUTH"
+          export GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.https://github.com/.extraheader \
+                 GIT_CONFIG_VALUE_0="AUTHORIZATION: basic $AUTH"
+          python3 dlv/delivery-008/run_008.py deliver --repo "$GITHUB_REPOSITORY" --work work --lock-dir dlv \
+            ${DRY_RUN:+--dry-run}
