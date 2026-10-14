@@ -1,16 +1,14 @@
 # 发布流程与公开 Gate
 
-## 公开 Gate（每条正式视频都必须全部满足才可发布）
+## 公开 Gate（自动，2026-10-13 起；不再要求 Founder 逐条观看）
 
-1. 完整 MP4 可恢复，整片 SHA256 与原始记录一致（不重新渲染、不重新配音）。
-2. 1920×1080 横屏封面、微博文案、中文字幕齐全。
-3. 完整成片机器 QA 通过。
-4. 素材的**公开再分发许可**已确认（公开仓库权限 ≠ 第三方素材公开许可）。
-5. **Founder 审片批准**已记录。
-6. 内容风险（车牌、人脸、他车、车型身份等）已处理或经 Founder 接受。
+`publisher/opc_gate.py` 按记录逐条判定，三项都为 JSON `true` 才公开，其余进入私有待交付（PRIVATE_PENDING，并写明缺哪一项）：
 
-源记录标为 `RIGHTS_UNVERIFIED`、`INTERNAL_REVIEW_ONLY` 或 `FOUNDER_VIEWING_PENDING` 的成片不得发布。
-未过 Gate 的内容只登记在私有待发布清单，媒体留在私有仓库；本公开仓库不保存待审清单、素材来源、RAW、GOLD、工程文件、日志或密钥。
+1. `machine_qa_pass`：自动技术 QA 通过（完整 MP4 可恢复、SHA256 一致、封面/文案/字幕齐全、机器 QA PASS）。
+2. `rights_confirmed`：素材公开再分发权利已确认（公开仓库权限 ≠ 第三方素材公开许可）。
+3. `public_distribution_approved`：该内容允许公开分发。
+
+`founder_visual_pass` 不再参与判定。Gate 从不把任何字段改为 true；权利未核实的内容不得伪造批准，也不得用 `--confirm-public-gate` 手动绕过——该参数只由 `opc_gate.py` 在判定通过后传给 `opc_publish.py`。
 
 ## 交付日期
 
@@ -59,3 +57,15 @@ python3 publisher/opc_publish.py --repo xuelingshang/opc-video-deliveries --date
 - 本会话可读取并推送本仓库分支（Claude C 会话当时推送返回 403；本会话的 GitHub App 授权已可写）。
 - C 的提交 `edf4a76` 已原样恢复到 `claude/great-allen-zms314`。
 - Release 创建与删除通过上述 Actions 工作流完成，不使用任何个人令牌。
+
+## 每日 Release（2026-10-14 起）
+
+- 每个交付日期只有一个 Release：`delivery-YYYY-MM-DD-01`。任何工位、任何账号当天（或提前为某日）完成的视频都**追加**进去，不再新建 `-02`、`-03`。
+- 统一入口 `publisher/opc_daily.py`：
+  - `--pkg 目录…`：追加 `opc_pack.py` 打好的包；`--from-release TAG --delete-source`：把旧的同日批次并入当天 Release，全部远端校验通过后再删除旧草稿。
+  - 同名同 SHA256 跳过；同名或同编号但 SHA256 不同报 CONFLICT，不覆盖；原有 ZIP 与清单记录全部保留，清单为“原记录 + 新条目”。
+  - 先上传并逐个校验 ZIP，最后替换清单；若清单在此期间被别的写入者改过，本次停止，重跑即可合并。失败后重跑会跳过已校验文件、续传其余文件。
+  - `--keep-draft` 只上传到草稿，当天 Release 已公开时拒绝（未授权内容不会被暴露）；公开只经 `opc_gate.py --publish`（它现在调用 `opc_daily.py --confirm-public-gate`）。
+  - GitHub 限制：每个 Release 最多 1000 个附件，单个附件 < 2 GiB（脚本检查）。
+- `opc_publish.py` 保持原有用法；但若当天 `-01` 已存在，它不再新开 `-02`，而是报错提示改用 `opc_daily.py`（沙盒日期 2099-12-31 除外）。
+- 离线测试：`python3 tests/run_daily_tests.py --work DIR`（合并、跳过、冲突、续传、旧流程拒开 -02、已公开拒收草稿内容）。

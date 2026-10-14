@@ -119,6 +119,10 @@ def pick_tag(releases, date, nn, asset_names):
         if r["draft"] and {a["name"] for a in r.get("assets", [])} <= asset_names | {MANIFEST_NAME}:
             return r["tag_name"], r            # resume our own unfinished draft
     n = max(same_day, default=0) + 1
+    if n > 1 and date != TEST_DATE:
+        # daily rule (2026-10-14): one release per delivery date; later stations append to -01
+        raise SystemExit(f"delivery-{date}-01 already exists: append with publisher/opc_daily.py, "
+                         f"never create delivery-{date}-{n:02d}")
     if n > 99:
         raise SystemExit("no free batch number left for this date")
     return f"delivery-{date}-{n:02d}", None
@@ -218,6 +222,8 @@ def main():
     ap.add_argument("--full-anon-verify", action="store_true", help="download every ZIP anonymously and hash it")
     ap.add_argument("--manifest-out", help="also write the manifest here")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--keep-draft", action="store_true",
+                    help="upload and verify into the draft only; never publish (no public gate needed, nothing becomes public)")
     ap.add_argument("--web-base", default="https://github.com", help=argparse.SUPPRESS)  # tests only
     a = ap.parse_args()
 
@@ -225,7 +231,7 @@ def main():
         raise SystemExit("date must be YYYY-MM-DD")
     if a.test != (a.date == TEST_DATE):
         raise SystemExit(f"test batches use delivery date {TEST_DATE} only, formal batches never")
-    if not a.test and not a.confirm_public_gate:
+    if not a.test and not a.confirm_public_gate and not a.keep_draft:
         raise SystemExit("formal batch refused: pass --confirm-public-gate only after rights and Founder viewing are approved")
     videos = load_packages(a.pkg, a.test)
     releases = list_releases(a.repo)
@@ -262,7 +268,13 @@ def main():
         upload(a.repo, rel, MANIFEST_NAME, mp, len(mbytes), hashlib.sha256(mbytes).hexdigest(), "application/json")
     expected = {e["asset_name"]: (e["size_bytes"], e["sha256"]) for e, _ in videos}
     expected[MANIFEST_NAME] = (len(mbytes), hashlib.sha256(mbytes).hexdigest())
-    verify_assets(a.repo, rel["id"], expected)
+    rel = verify_assets(a.repo, rel["id"], expected)
+    if a.keep_draft:
+        if not rel.get("draft"):
+            raise SystemExit("release is not a draft; refusing to continue")
+        log(f"  kept as DRAFT (not public): {rel['html_url']}")
+        log(json.dumps(dict(release_tag=tag, draft=True, assets=len(expected)), ensure_ascii=False))
+        return
     rel = gh([f"repos/{a.repo}/releases/{rel['id']}", "-F", "draft=false", "-f",
               f"make_latest={'false' if a.test else 'true'}"], method="PATCH")
     log(f"  published: {rel['html_url']}")
