@@ -11,13 +11,11 @@ VIDEO-ID/
   subtitle.srt
 ```
 
-## 朋友怎么下载
+## 员工怎么下载
 
-使用 Founder 给的 **R2 下载工具**，双击 `01-双击下载最新视频.cmd`，所有已到期的批次整理到
-`D:\OPC-DELIVERIES\YYYY-MM-DD\VIDEO-ID\`，已校验过的视频不会重复下载。
-
-> 注意：原版 R2 在仓库有 2 个及以上 Release 时会跳过全部批次（详见 [docs/R2-COMPATIBILITY.md](docs/R2-COMPATIBILITY.md)）。
-> 正式交付开始前，请把朋友文件夹中的 `DOWNLOAD.ps1` 换成 [`r2.1-patch/DOWNLOAD.ps1`](r2.1-patch/README.md)（只改一行），并先在 Windows 上验收。
+使用 [`r2.2/`](r2.2/README.md) 员工版下载器：双击 `01-双击下载全部视频.cmd`，自动下载所有已公开的正式交付批次（包括提前上传、交付日期在未来的批次），
+校验后解压到 `D:\OPC-DELIVERIES\YYYY-MM-DD\VIDEO-ID\`；已校验过的视频不会重复下载，没有新视频时提示“没有新的交付视频”。
+原版 R2 在仓库有 2 个及以上 Release 时会失效（见 [docs/R2-COMPATIBILITY.md](docs/R2-COMPATIBILITY.md)），请换用 R2.2。
 
 ## 当前状态
 
@@ -29,8 +27,9 @@ VIDEO-ID/
 | 目录 | 内容 |
 |---|---|
 | `r2-original/` | 原版 R2 朋友端工具，逐字节保存，附来源与 SHA256 |
-| `r2.1-patch/` | 原版 `DOWNLOAD.ps1` 的一行修正版（待 Founder 决定分发） |
-| `publisher/` | 打包、发布（与原版 R2 清单格式一致）、TEST 清理脚本；原创测试样片生成脚本 |
+| `r2.1-patch/` | 原版 `DOWNLOAD.ps1` 的一行修正版 |
+| `r2.2/` | **员工版下载器**（R2.1 + 提前下载 + TEST 隔离 + 无新视频提示） |
+| `publisher/` | 打包、自动公开 Gate（`opc_gate.py`）、发布（与原版 R2 清单格式一致）、TEST 清理；原创测试样片生成脚本 |
 | `.github/workflows/` | 仅手动触发的 TEST 批次发布 / 清理工作流 |
 | `tests/` | 本地模拟 GitHub 的测试（PowerShell 7 / Linux，不代表 Windows 实测） |
 | `tool/` | Claude C 的兼容版下载器，仅保留记录，不分发 |

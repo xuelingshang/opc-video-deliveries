@@ -15,6 +15,8 @@ TOOLS = {  # name -> (path, expected SHA256)
                  "c06e41581f4c0211113ce38effd7cabfb99db24c9051b0dce2d6dd657198457a"),
     "r2.1": (os.path.join(HERE, "..", "r2.1-patch", "DOWNLOAD.ps1"),
              "8ba15e78f2f24fbe70cf5fa77097baefc8931ed953f380e0453faf70727f781e"),
+    "r2.2": (os.path.join(HERE, "..", "r2.2", "DOWNLOAD.ps1"),
+             "0e3ff442763a78bc479b5caae668b7eab3f7669bf087556b3a897729b1fd6298"),
 }
 
 
