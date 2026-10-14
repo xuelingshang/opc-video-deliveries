@@ -3,9 +3,9 @@
  "source_repo": "xuelingshang/opc-auto-batch-008-new-model-media",
  "request_dir": "DELIVERY-008/requests",
  "stations": {
-  "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75]]},
-  "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": null},
-  "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 95]]}
+  "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 70]]},
+  "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[76, 80]]},
+  "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 90]]}
  },
  "rules": [
   "A station's request DELIVERY-008/requests/<YYYY-MM-DD>-<station>.json is read only from that station's own branches (branch_re); copies on other branches are ignored.",
