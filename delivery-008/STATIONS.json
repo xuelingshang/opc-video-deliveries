@@ -5,12 +5,12 @@
  "stations": {
   "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75], [121, 130]]},
   "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[11, 20], [76, 85]]},
-  "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 100]]},
-  "D": {"branch_re": "^claude/008-d-[A-Za-z0-9._-]+$", "ids": [[106, 110]]},
-  "3": {"branch_re": "^claude/008-3-[A-Za-z0-9.*-]+$", "ids": [[1, 5]]},
-  "4": {"branch_re": "^claude/008-4-[A-Za-z0-9.*-]+$", "ids": [[21, 23], [25, 26]]},
+  "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 100], [101, 105]]},
+  "D": {"branch_re": "^claude/008-d-[A-Za-z0-9._-]+$", "ids": [[106, 110], [111, 115]]},
+  "3": {"branch_re": "^claude/008-3-[A-Za-z0-9.*-]+$", "ids": [[1, 5], [6, 9]]},
+  "4": {"branch_re": "^claude/008-4-[A-Za-z0-9.*-]+$", "ids": [[21, 23], [25, 26], [27, 28], [30, 30]]},
   "5": {"branch_re": "^claude/008-5-[A-Za-z0-9.*-]+$", "ids": [[61, 65]]},
-  "6": {"branch_re": "^claude/008-6-[A-Za-z0-9.*-]+$", "ids": [[136, 140]]}
+  "6": {"branch_re": "^claude/008-6-[A-Za-z0-9.*-]+$", "ids": [[136, 140], [141, 145]]}
  },
  "rules": [
   "A station's request DELIVERY-008/requests/<YYYY-MM-DD>-<station>.json is read only from that station's own branches (branch_re); copies on other branches are ignored.",
