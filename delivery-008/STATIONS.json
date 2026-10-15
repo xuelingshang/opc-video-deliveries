@@ -3,7 +3,7 @@
  "source_repo": "xuelingshang/opc-auto-batch-008-new-model-media",
  "request_dir": "DELIVERY-008/requests",
  "stations": {
-  "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75]]},
+  "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75], [121, 130]]},
   "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[11, 20], [76, 85]]},
   "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 100]]},
   "D": {"branch_re": "^claude/008-d-[A-Za-z0-9._-]+$", "ids": [[106, 110]]},
