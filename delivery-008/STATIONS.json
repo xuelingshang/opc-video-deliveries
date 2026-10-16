@@ -4,7 +4,7 @@
  "request_dir": "DELIVERY-008/requests",
  "stations": {
   "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75], [121, 130]]},
-  "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[11, 20], [76, 85]]},
+  "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[11, 20], [76, 85], [146, 150]]},
   "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 100], [101, 105]]},
   "D": {"branch_re": "^claude/008-d-[A-Za-z0-9._-]+$", "ids": [[106, 110], [111, 115]]},
   "3": {"branch_re": "^claude/008-3-[A-Za-z0-9.*-]+$", "ids": [[1, 5], [6, 9], [116, 120]]},
