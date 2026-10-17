@@ -1,20 +1,20 @@
-{
- "schema": "OPC-DELIVERY-008-STATIONS/1",
- "source_repo": "xuelingshang/opc-auto-batch-008-new-model-media",
- "request_dir": "DELIVERY-008/requests",
- "stations": {
-  "B": {"branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75], [121, 130]]},
-  "1": {"branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[11, 20], [76, 85], [146, 150], [31, 35]]},
-  "2": {"branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 100], [101, 105], [36, 40]]},
-  "D": {"branch_re": "^claude/008-d-[A-Za-z0-9._-]+$", "ids": [[106, 110], [111, 115], [157, 160], [56, 60]]},
-  "3": {"branch_re": "^claude/008-3-[A-Za-z0-9.*-]+$", "ids": [[1, 5], [6, 9], [116, 120], [46, 50]]},
-  "4": {"branch_re": "^claude/008-4-[A-Za-z0-9.*-]+$", "ids": [[21, 23], [25, 26], [27, 28], [30, 30], [51, 55]]},
-  "5": {"branch_re": "^claude/008-5-[A-Za-z0-9.*-]+$", "ids": [[61, 65], [131, 135]]},
-  "6": {"branch_re": "^claude/008-6-[A-Za-z0-9.*-]+$", "ids": [[136, 140], [141, 145], [152, 156], [41, 45]]}
- },
- "rules": [
-  "A station's request DELIVERY-008/requests/<YYYY-MM-DD>-<station>.json is read only from that station's own branches (branch_re); copies on other branches are ignored.",
-  "ids: inclusive 008-NNN number ranges the station may deliver. null = not yet assigned: any 008 number outside every other station's ranges.",
-  "Only the repository owner edits this file (it lives on the protected default branch of opc-video-deliveries)."
- ]
-}
+{
+  "schema": "OPC-DELIVERY-008-STATIONS/1",
+  "source_repo": "xuelingshang/opc-auto-batch-008-new-model-media",
+  "request_dir": "DELIVERY-008/requests",
+  "stations": {
+    "B": { "branch_re": "^claude/008-b-[A-Za-z0-9._-]+$", "ids": [[66, 75], [121, 130]] },
+    "1": { "branch_re": "^claude/008-1-[A-Za-z0-9._-]+$", "ids": [[11, 20], [76, 85], [146, 150], [31, 35]] },
+    "2": { "branch_re": "^claude/008-2-[A-Za-z0-9._-]+$", "ids": [[86, 100], [101, 105], [36, 40]] },
+    "D": { "branch_re": "^claude/008-d-[A-Za-z0-9._-]+$", "ids": [[106, 110], [111, 115], [157, 160]] },
+    "3": { "branch_re": "^claude/008-3-[A-Za-z0-9.*-]+$", "ids": [[1, 5], [6, 9], [116, 120], [46, 50]] },
+    "4": { "branch_re": "^claude/008-4-[A-Za-z0-9.*-]+$", "ids": [[21, 23], [25, 26], [27, 28], [30, 30], [51, 55]] },
+    "5": { "branch_re": "^claude/008-5-[A-Za-z0-9.*-]+$", "ids": [[61, 65], [131, 135]] },
+    "6": { "branch_re": "^claude/008-6-[A-Za-z0-9.*-]+$", "ids": [[136, 140], [141, 145], [152, 156], [41, 45], [57, 57], [59, 60]] }
+  },
+  "rules": [
+    "A station's request DELIVERY-008/requests/<YYYY-MM-DD>-<station>.json is read only from that station's own branches (branch_re); copies on other branches are ignored.",
+    "ids: inclusive 008-NNN number ranges the station may deliver. null = not yet assigned: any 008 number outside every other station's ranges.",
+    "Only the repository owner edits this file (it lives on the protected default branch of opc-video-deliveries)."
+  ]
+}
