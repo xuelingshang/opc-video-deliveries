@@ -17,6 +17,7 @@
   },
   "only_ids": [
     "009-001", "009-002", "009-003", "009-004", "009-005",
+    "009-006", "009-007", "009-008", "009-011",
     "009-021",
     "009-043", "009-049", "009-057", "009-058", "009-061",
     "009-081", "009-082", "009-084", "009-085",
@@ -27,6 +28,7 @@
     "R3/DELIVERY/DELIVERY_MANIFEST.json",
     "R2/DELIVERY/DELIVERY_MANIFEST.json",
     "DELIVERY/DELIVERY_MANIFEST.json",
+    "delivery/{id}-DELIVERY.zip.manifest.json",
     "delivery/{id}.zip.manifest.json",
     "DELIVERY-PARTS/PARTS.json"
   ],
